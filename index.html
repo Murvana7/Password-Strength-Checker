@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Password Strength Checker</title>
+<style>
+  :root{--bg:#0b1220;--panel:rgba(255,255,255,.06);--border:rgba(255,255,255,.12);--text:#eaf0ff;--muted:rgba(234,240,255,.72);--acc:#38bdf8;--r:18px}
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:radial-gradient(900px 500px at 20% -10%, rgba(56,189,248,.25), transparent 60%), var(--bg);color:var(--text)}
+  .wrap{max-width:760px;margin:32px auto;padding:0 16px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+  h1{margin:0 0 6px} .sub{color:var(--muted);margin:0 0 14px}
+  input,button{width:100%;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);padding:10px 12px;outline:none}
+  button{cursor:pointer} button.primary{background:linear-gradient(90deg, rgba(56,189,248,.9), rgba(96,165,250,.9));border:none;margin-top:10px}
+  .bar{height:10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);overflow:hidden;margin:12px 0 8px}
+  .fill{height:100%;width:0%}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
+  ul{margin:10px 0 0 18px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Password Strength</h1>
+    <p class="sub">Strength meter • suggestions • local-only (no network calls)</p>
+
+    <input id="pw" type="password" placeholder="Type a password…">
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="row">
+      <span class="pill" id="scorePill">Score: 0/100</span>
+      <span class="pill" id="labelPill">Weak</span>
+    </div>
+
+    <button class="primary" id="toggle">Show / Hide</button>
+
+    <h3 style="margin:14px 0 8px">Suggestions</h3>
+    <ul id="tips"></ul>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+
+function scorePassword(p){
+  let score=0;
+  const tips=[];
+  if(p.length>=12) score+=25; else tips.push("Use 12+ characters.");
+  if(/[A-Z]/.test(p)) score+=15; else tips.push("Add uppercase letters.");
+  if(/[a-z]/.test(p)) score+=15; else tips.push("Add lowercase letters.");
+  if(/[0-9]/.test(p)) score+=15; else tips.push("Add numbers.");
+  if(/[^A-Za-z0-9]/.test(p)) score+=20; else tips.push("Add symbols (e.g., !@#$).");
+
+  // penalty for repeats
+  if(/(.)\1{2,}/.test(p)) { score-=10; tips.push("Avoid repeated characters (aaa)."); }
+  // penalty for common patterns
+  if(/password|qwerty|12345|11111/i.test(p)) { score-=25; tips.push("Avoid common passwords/patterns."); }
+
+  score = Math.max(0, Math.min(100, score));
+  return {score, tips};
+}
+function label(score){
+  if(score>=80) return "Strong";
+  if(score>=55) return "Good";
+  if(score>=35) return "Okay";
+  return "Weak";
+}
+function setBar(score){
+  $("#fill").style.width = score + "%";
+  $("#fill").style.background = score>=80 ? "rgba(56,189,248,.9)" : score>=55 ? "rgba(96,165,250,.9)" : "rgba(255,255,255,.35)";
+}
+
+function render(){
+  const p=$("#pw").value;
+  const {score, tips}=scorePassword(p);
+  $("#scorePill").textContent=`Score: ${score}/100`;
+  $("#labelPill").textContent=label(score);
+  setBar(score);
+  const ul=$("#tips");
+  ul.innerHTML="";
+  (tips.length? tips : ["Looks solid. Consider using a password manager."]).forEach(t=>{
+    const li=document.createElement("li"); li.textContent=t; ul.appendChild(li);
+  });
+}
+$("#pw").addEventListener("input", render);
+$("#toggle").onclick=()=>{
+  $("#pw").type = ($("#pw").type==="password") ? "text" : "password";
+};
+render();
+</script>
+</body>
+</html>
